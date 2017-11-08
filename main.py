@@ -1,3 +1,5 @@
+#Esta es una aplicación realizada por Diego Sisalima
+
 from AssisBot import AssisBot
 import time
 
