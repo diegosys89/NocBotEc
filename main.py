@@ -1,5 +1,4 @@
-#Esta es una aplicación realizada por Diego Sisalima
-#Cambio de prueba
+#Author: Diego Sisalima
 
 from AssisBot import AssisBot
 import time
