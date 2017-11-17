@@ -10,8 +10,8 @@ def main():
     option = 'x'
     while option != '0':
         print('------------Menu principal AssisBot--------------')
-        print('1. Correr server')
-        print('2. Pausar server')
+        print('1. Iniciar Bot')
+        print('2. Pausar Bot')
         print('0. Salir')
         option = input()
         if option == '1':
