@@ -10,9 +10,9 @@ def main():
     option = 'x'
     while option != '0':
         print('------------Menu principal AssisBot--------------')
-        print('1. Iniciar NocBot')
-        print('2. Pausar NocBot')
-        print('0. Salir')
+        print('1. Start NocBot')
+        print('2. Pause NocBot')
+        print('0. Exit')
         option = input()
         if option == '1':
             Bot.startToListen()
