@@ -17,64 +17,53 @@ class NocData:
         self.pathTtInfo = config['NocData']['pathTtInfo']
         self.pathLista = config['NocData']['pathLista']
         self.goal = config['NocData']['ttGoal']
-        self.modificationDate = ''
-        self.nocFSE = ''
-        self.nocTRE = ''
-        self.nocTOP = ''
-        self.nocQTY = ''
+        self.modificationDate = self.getModificationDate()
+        self.loadData()
 
     def loadData(self):
-        if(self.getModificationDate()!=self.modificationDate):
-            self.modificationDate = self.getModificationDate()
-            nocData = pd.read_csv(self.pathNoc)
-            ticketInfo = pd.read_csv(self.pathTtInfo)
-            lista = pd.read_csv(self.pathLista)
-            nocData.rename(columns = {'﻿Incident Number' : 'Incident Number'}, inplace = True)
-            ticketInfo.rename(columns = {'﻿Incident Number' : 'Incident Number'}, inplace = True)
-            lista.rename(columns = {'﻿Operador Cierre' : 'Operador Cierre'}, inplace = True)
+        print("Inicia Carga de Datos")
+        print("Cargando Noc Data")
+        nocData = pd.read_csv(self.pathNoc)
+        print("Cargando TicketInfo")
+        ticketInfo = pd.read_csv(self.pathTtInfo)
+        print("Cargando Listas")
+        lista = pd.read_csv(self.pathLista)
+        print("Estadarizando BDs")
+        nocData.rename(columns = {'﻿Incident Number' : 'Incident Number'}, inplace = True)
+        ticketInfo.rename(columns = {'﻿Incident Number' : 'Incident Number'}, inplace = True)
+        lista.rename(columns = {'﻿Operador Cierre' : 'Operador Cierre'}, inplace = True)
+        print("Resolviendo conflicto de tipos de datos")
+        #Cambio de Tipo de datos a las fechas
+        nocData['Last Resolved Date'] = pd.to_datetime(nocData['Last Resolved Date'], dayfirst = True)
+        nocData['Submit Date'] = pd.to_datetime(nocData['Submit Date'], dayfirst = True)
 
-            #Cambio de Tipo de datos a las fechas
-            nocData['Last Resolved Date'] = pd.to_datetime(nocData['Last Resolved Date'], dayfirst = True)
-            nocData['Submit Date'] = pd.to_datetime(nocData['Submit Date'], dayfirst = True)
+        #Se preparan los datos para ser unidos
+        print("Filtrando y eliminado registros")
+        closedInfo = ticketInfo.loc[(ticketInfo['Event'] == 'Closed')]#Datos de Cierre
+        closedInfo = closedInfo.drop(closedInfo[[1,2,3,4,5,6,7,8,9]], axis = 1) #Se dejan solo columnas necesarias
+        openInfo = ticketInfo.loc[ticketInfo['Event'] == 'Open'] #Se guarda para la apertura
+        openInfo = openInfo.drop(openInfo[[1,2,3,10,11,12,13,14]], axis = 1) #Se dejan solo columnas necesarias
 
-            #Se preparan los datos para ser unidos
-            closedInfo = ticketInfo.loc[(ticketInfo['Event'] == 'Closed')]#Datos de Cierre
-            closedInfo = closedInfo.drop(closedInfo[[1,2,3,4,5,6,7,8,9]], axis = 1) #Se dejan solo columnas necesarias
-            openInfo = ticketInfo.loc[ticketInfo['Event'] == 'Open'] #Se guarda para la apertura
-            openInfo = openInfo.drop(openInfo[[1,2,3,10,11,12,13,14]], axis = 1) #Se dejan solo columnas necesarias
+        #No sería necesario realizar todo un query de las que corresponden a las fechas ya que eso lo haría el Qlik Sense
+        #Aqui se juntan todas las tablas se Guardan en nocDataFinal
+        print("Unificando BDs")
+        nocDataFinal = pd.merge(nocData, openInfo, on = 'Incident Number')
+        nocDataFinal = pd.merge(nocDataFinal, closedInfo, on = 'Incident Number')
 
-            #No sería necesario realizar todo un query de las que corresponden a las fechas ya que eso lo haría el Qlik Sense
-            #Aqui se juntan todas las tablas se Guardan en nocDataFinal
-            nocDataFinal = pd.merge(nocData, openInfo, on = 'Incident Number')
-            nocDataFinal = pd.merge(nocDataFinal, closedInfo, on = 'Incident Number')
-
-            self.nocData = nocDataFinal
-            self.lista = lista
-            self.nocFSE = self.getFSE()
-            self.nocTOP = self.getTopCierre(10)
-            self.nocTRE = self.getTRE()
-            self.nocQTY = self.getMonthTicketQuantity()
-            return True
-        else:
-            return False
-
-    def get_nocTOP(self):
-        return self.nocTOP
-
-    def get_nocFSE(self):
-        return self.nocFSE
-
-    def get_nocTRE(self):
-        return self.nocTRE
-
-    def get_nocQTY(self):
-        return self.nocQTY
+        self.nocData = nocDataFinal
+        self.lista = lista
+        print("Finalizada Carga de Datos")
 
     def getModificationDate(self):
         t = os.path.getmtime(self.pathNoc)
         return(time.ctime(int(t)))
 
+    def validateUpdatedData(self):
+        if (self.modificationDate != self.getModificationDate()):
+            self.loadData()
+
     def getTopCierre(self, top, turno = 'Todos'):
+        self.validateUpdatedData()
         nocTopClosed = self.getTicketsByTurn(self.nocData,turno)
         top10 = nocTopClosed.groupby("Operador Cierre").count().sort_values(by = 'Closed Flag',ascending = False)
         top10 = pd.DataFrame({'Tickets':pd.Series(top10['Closed Flag'])})
@@ -136,6 +125,7 @@ class NocData:
 
     def getMonthTicketQuantity(self, *argv):
         #Conteo de Tickets cerrados al momento del mes, hay que refactorizar la funci'on
+        self.validateUpdatedData()
         fechaCorte = (argv[0]) if len(argv)>0 else datetime.now()
         fin = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/'+str(fechaCorte.day)+' 23:59:59'
         inicio = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/01'+' 00:00:00'
@@ -144,16 +134,22 @@ class NocData:
         tt_qty = noc_query['Closed Flag'].count()
         return tt_qty
 
-    def getFSE(self,*argv):
+    def getFSE(self, group, *argv):
+        self.validateUpdatedData()
         ImagePath = 'D:\\Projects\\NocBot_Beta\\Charts\\FSE.png'
         noc_query = self.nocData.loc[(self.nocData['Status'] == 'Closed') | (self.nocData['Status'] == 'Resolved')]
         noc_query = noc_query.loc[noc_query['FSE']!='No Aplica']
 
         #Son los strings para las tablas
         columns = ('Critical (95%)', 'High (95%)', 'Medium (90%)', 'Low (85%)')
-        rows = ['Acceso', 'Transporte+IP', 'Plataformas', 'Core']
         #Se prepara para que busque en todos los grupos
-        noc_groups = ['EXT Acceso Infra Calidad NOC','EXT Transporte IP NOC','EXT Plataformas NOC','EXT Core Voz Datos NOC']
+        if (group == 'NOC Unificado'):
+            noc_groups = ['EXT Acceso Infra Calidad NOC','EXT Transporte IP NOC','EXT Plataformas NOC','EXT Core Voz Datos NOC']
+            rows = ['Acceso', 'Transporte+IP', 'Plataformas', 'Core']
+        else:
+            noc_groups = [group]
+            rows = [group]
+
         urgency = ['1-Critical', '2-High', '3-Medium', '4-Low']
 
         #Se arma el array con los datos para la tabla
@@ -200,6 +196,7 @@ class NocData:
             return ("{1:.{0}f}%".format(2,per*100))
 
     def getTRE(self,*argv):
+        self.validateUpdatedData()
         ImagePath = 'D:\\Projects\\NocBot_Beta\\Charts\\TRE.png'
         fechaCorte = datetime.now()
         fin = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/'+str(fechaCorte.day)+' 23:59:59'

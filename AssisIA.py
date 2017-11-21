@@ -10,40 +10,42 @@ class AssisIA:
         updateTime = self.NocData.getModificationDate()
         text = ("Hola " + data.sender.first_name)
         image = False
+        options = False
+        imagePath = False
         if(str(input.message.text).find('tks')>0):
-            self.NocData.loadData()
-            num = self.NocData.get_nocQTY()
+
+            num = self.NocData.getMonthTicketQuantity()
             goal = self.NocData.getMeta()
             text = (text + ", Tenemos " + str(num) + " tickets. Actualizado al: "+updateTime+
                     ". Meta para el día de hoy "+str(goal)+" tickets.")
-            imagePath = False
 
         elif(str(input.message.text).find('top')>0):
-            self.NocData.loadData()
-            resp = self.NocData.get_nocTOP()
+            resp = self.NocData.getTopCierre(10)
             text = (text+"\nActualizado al: "+updateTime)
             image = True
             imagePath = resp['ImagePath']
 
         elif(str(input.message.text).find('fse')>0):
-            self.NocData.loadData()
-            resp = self.NocData.get_nocFSE()
+            options = [['EXT Acceso Infra Calidad NOC','EXT Transporte IP NOC','EXT Plataformas NOC','EXT Core Voz Datos NOC'],['NOC Unificado']]
+
+        elif(str(input.message.text).find('tre')>0):
+            resp = self.NocData.getTRE()
             text = (text + "\nActualizado al: "+updateTime)
             image = True
             imagePath = resp['ImagePath']
 
-        elif(str(input.message.text).find('tre')>0):
-            self.NocData.loadData()
-            resp = self.NocData.get_nocTRE()
+        elif(str(input.message.text) in ['EXT Acceso Infra Calidad NOC','EXT Transporte IP NOC','EXT Plataformas NOC','EXT Core Voz Datos NOC','NOC Unificado']):
+            print(str(input.message.text))
+            resp = self.NocData.getFSE(str(input.message.text))
             text = (text + "\nActualizado al: "+updateTime)
             image = True
             imagePath = resp['ImagePath']
 
         else:
             text = (text + ", no tengo respuesta para tu petición")
-            imagePath = None
+            imagePath = False
 
-        msg = {'Image':image,'ImagePath':imagePath,'Text':text,'UpdateTime':updateTime}
+        msg = {'Image':image,'ImagePath':imagePath,'Text':text, 'Options': options,'UpdateTime':updateTime}
         return msg
 
 #Primer nombre: data.sender.first_name

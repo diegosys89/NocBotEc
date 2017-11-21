@@ -1,5 +1,5 @@
 from configobj import ConfigObj
-from twx.botapi import TelegramBot, InputFileInfo, InputFile
+from twx.botapi import TelegramBot, InputFileInfo, InputFile,ReplyKeyboardMarkup
 from multiprocessing import Process
 import threading
 from datetime import datetime
@@ -50,12 +50,19 @@ class AssisBot:
                 if len(updates)>0:
                     if self.Listen: #debería responder? (Es una bandera)
                         res = self.IA.getResponse(updates[0])
-                        self.Telegram.send_message(updates[0].message.chat.id, res['Text']).wait()
-                        if(res['Image']):
-                            fp = open(res['ImagePath'], 'rb')
-                            file_info = InputFileInfo('NOCData.png', fp, 'image/png')
-                            chart = InputFile('photo', file_info)
-                            self.Telegram.send_photo(updates[0].message.chat.id, photo=chart).wait()
+                        if (res['Options'] == False):
+                            self.Telegram.send_message(updates[0].message.chat.id, res['Text']).wait()
+                            if(res['Image']):
+                                fp = open(res['ImagePath'], 'rb')
+                                file_info = InputFileInfo('NOCData.png', fp, 'image/png')
+                                chart = InputFile('photo', file_info)
+                                self.Telegram.send_photo(updates[0].message.chat.id, photo=chart).wait()
+                        else:
+                            keyboard = res['Options']
+                            reply_markup = ReplyKeyboardMarkup.create(keyboard)
+                            msg = 'Seleccione el grupo para var los detalles'
+                            self.Telegram.send_message(updates[0].message.chat.id, msg, reply_markup=reply_markup).wait()
+
                         dataLoadDelta = (datetime.now()-datetime.strptime(res['UpdateTime'],'%a %b %d %H:%M:%S %Y'))
                         dataLoadTimeHours = dataLoadDelta.seconds / 3600
                         maxHours = 3
