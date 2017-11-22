@@ -35,8 +35,12 @@ class AssisIA:
             imagePath = resp['ImagePath']
 
         elif(str(input.message.text) in ['EXT Acceso Infra Calidad NOC','EXT Transporte IP NOC','EXT Plataformas NOC','EXT Core Voz Datos NOC','NOC Unificado']):
-            print(str(input.message.text))
-            resp = self.NocData.getFSE(str(input.message.text))
+            if(str(input.message.text) == 'NOC Unificado'):
+                print(str(input.message.text))
+                resp = self.NocData.getFSE()
+            else:
+                print(str(input.message.text))
+                resp = self.NocData.getFSEDetail(str(input.message.text))
             text = (text + "\nActualizado al: "+updateTime)
             image = True
             imagePath = resp['ImagePath']

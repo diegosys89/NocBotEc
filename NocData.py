@@ -60,6 +60,7 @@ class NocData:
 
     def validateUpdatedData(self):
         if (self.modificationDate != self.getModificationDate()):
+            self.modificationDate = self.getModificationDate()
             self.loadData()
 
     def getTopCierre(self, top, turno = 'Todos'):
@@ -80,7 +81,7 @@ class NocData:
         #Creación de gráfica---------------------------------------
         finalchart['TTs Cerrados'] = finalchart['TTs Cerrados'].astype(int)
         finalchart['Nombre - Pos'] = finalchart.index.astype(str) + '.- ' + finalchart['Nombre']
-        ImagePath = 'D:\\Projects\\NocBot_Beta\\Charts\\Top10.png'
+        ImagePath = 'D:\\Projects\\NocBotEc\\Charts\\Top10.png'
         finalchart = finalchart.sort_values(by = 'TTs Cerrados')
         objects = finalchart['Nombre - Pos']
         y_pos = np.arange(len(objects))
@@ -134,45 +135,101 @@ class NocData:
         tt_qty = noc_query['Closed Flag'].count()
         return tt_qty
 
-    def getFSE(self, group, *argv):
+
+
+    def getFSE(self, *argv):
         self.validateUpdatedData()
-        ImagePath = 'D:\\Projects\\NocBot_Beta\\Charts\\FSE.png'
+        ImagePath = 'D:\\Projects\\NocBotEc\\Charts\\FSE.png'
         noc_query = self.nocData.loc[(self.nocData['Status'] == 'Closed') | (self.nocData['Status'] == 'Resolved')]
         noc_query = noc_query.loc[noc_query['FSE']!='No Aplica']
+        #los de este mes
+        fechaCorte = datetime.now()
+        fin = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/'+str(fechaCorte.day)+' 23:59:59'
+        inicio = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/01'+' 00:00:00'
+        noc_query = noc_query.loc[((data['Last Resolved Date']<=pd.to_datetime(fin)) & (noc_query['Last Resolved Date']>=pd.to_datetime(inicio)))]
+        #---------------------
+        data_list = []
+        plt.clf()
+        #Se prepara para que busque en todos los grupos
 
+        noc_groups = ['EXT Acceso Infra Calidad NOC','EXT Transporte IP NOC','EXT Plataformas NOC','EXT Core Voz Datos NOC']
+        rows = ['Acceso', 'Transporte+IP', 'Plataformas', 'Core']
         #Son los strings para las tablas
         columns = ('Critical (95%)', 'High (95%)', 'Medium (90%)', 'Low (85%)')
-        #Se prepara para que busque en todos los grupos
-        if (group == 'NOC Unificado'):
-            noc_groups = ['EXT Acceso Infra Calidad NOC','EXT Transporte IP NOC','EXT Plataformas NOC','EXT Core Voz Datos NOC']
-            rows = ['Acceso', 'Transporte+IP', 'Plataformas', 'Core']
-        else:
-            noc_groups = [group]
-            rows = [group]
-
         urgency = ['1-Critical', '2-High', '3-Medium', '4-Low']
-
+        umbrales = [95,95,90,85]
         #Se arma el array con los datos para la tabla
-        data_list = []
         for i in range(len(noc_groups)):
             data_list.append([])
             for j in range(len(urgency)):
                 data_list[i].append(self.calculateFSE(noc_query,noc_groups[i],urgency[j]))
-
         #Table - Main table
-        umbrales = [95,95,90,85]
-        plt.clf()
         ax = plt.subplot2grid((3,3), (0,3), colspan=2, rowspan=2)
         ax.table(cellText=data_list,
                     rowLabels=rows,
                     colLabels=columns,
                     loc="upper center", cellColours = self.getColorMap(data_list,umbrales))
         ax.axis("off")
+
         #fig.set_size_inches(w=6, h=5)
         plt.title('Cumplimiento FSE ('+str(self.getModificationDate())+')')
         plt.savefig(os.path.join(ImagePath), dpi=300, format='png', bbox_inches='tight')
         data = {'Datos':data_list,'ImagePath':ImagePath}
         return data
+
+    def getFSEDetail(self, group, *argv):
+        self.validateUpdatedData()
+        ImagePath = 'D:\\Projects\\NocBotEc\\Charts\\FSE.png'
+        noc_query = self.nocData.loc[(self.nocData['Status'] == 'Closed') | (self.nocData['Status'] == 'Resolved')]
+        noc_query = noc_query.loc[noc_query['FSE']!='No Aplica']
+
+        #los de este mes
+        fechaCorte = datetime.now()
+        fin = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/'+str(fechaCorte.day)+' 23:59:59'
+        inicio = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/01'+' 00:00:00'
+        noc_query = noc_query.loc[((noc_query['Last Resolved Date']<=pd.to_datetime(fin)) & (noc_query['Last Resolved Date']>=pd.to_datetime(inicio)))]
+        #---------------------
+        data_list = []
+        plt.clf()
+        #Se prepara para que busque en todos los grupos
+        noc_groups = [group]
+        #Son los strings para las tablas
+        columns = ('Universo', 'Cumple', 'Justificado', 'No Cumple')
+        urgency = ['1-Critical', '2-High', '3-Medium', '4-Low']
+        umbrales = [95,95,90,85]
+        #Se arma el array con los datos para la tabla
+        for i in range(len(urgency)):
+            data_list.append([])
+            for j in range(len(columns)):
+                data_list[i].append(self.calculateFSEDetail(noc_query,noc_groups[0],urgency[i],columns[j]))
+        #Table - Main table
+        ax = plt.subplot2grid((3,3), (0,3), colspan=2, rowspan=2)
+        ax.table(cellText=data_list,
+                    rowLabels=urgency,
+                    colLabels=columns,
+                    loc="upper center")#, cellColours = self.getColorMap(data_list,umbrales))
+        ax.axis("off")
+
+        #fig.set_size_inches(w=6, h=5)
+        plt.title('Cumplimiento FSE ('+str(self.getModificationDate())+')')
+        plt.savefig(os.path.join(ImagePath), dpi=300, format='png', bbox_inches='tight')
+        data = {'Datos':data_list,'ImagePath':ImagePath}
+        return data
+
+    def calculateFSEDetail(self, df, assignee, urgency, type):
+        if type == 'Universo':
+            type = ['Cumple','Justificado','No Cumple']
+        else:
+            type = [type]
+
+        fse = df.loc[(df['Urgency'] == urgency) & (df['FSE'].isin(type))]
+
+        if (assignee == 'EXT Acceso Infra Calidad NOC'):
+            fse = fse.loc[(fse['Assignee'] == assignee) | ((fse['Assigned Group'] == 'O&M Infraestructura') & (fse['Assignee']=='TEC - O&M NOC')) | (fse['Assigned Group'] == 'NOC Primer Nivel')]
+            return str(fse['FSE'].count())
+        else:
+            fse = fse.loc[fse['Assignee'] == assignee]
+            return str(fse['FSE'].count())
 
     def calculateFSE(self, df, assignee, urgency):
         fse = df.loc[df['Urgency'] == urgency]
@@ -197,7 +254,7 @@ class NocData:
 
     def getTRE(self,*argv):
         self.validateUpdatedData()
-        ImagePath = 'D:\\Projects\\NocBot_Beta\\Charts\\TRE.png'
+        ImagePath = 'D:\\Projects\\NocBotEc\\Charts\\TRE.png'
         fechaCorte = datetime.now()
         fin = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/'+str(fechaCorte.day)+' 23:59:59'
         inicio = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/01'+' 00:00:00'
