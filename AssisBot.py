@@ -57,10 +57,16 @@ class AssisBot:
                                 file_info = InputFileInfo('NOCData.png', fp, 'image/png')
                                 chart = InputFile('photo', file_info)
                                 self.Telegram.send_photo(updates[0].message.chat.id, photo=chart).wait()
+                            if(res['Document']):
+                                doc = open(res['DocumentPath'], 'rb')
+                                file_info = InputFileInfo('Details.csv', doc, 'csv')
+                                document = InputFile('document', file_info)
+                                self.Telegram.send_document(updates[0].message.chat.id, document=document).wait()
+
                         else:
                             keyboard = res['Options']
                             reply_markup = ReplyKeyboardMarkup.create(keyboard)
-                            msg = 'Seleccione el grupo para var los detalles'
+                            msg = 'Seleccione el grupo para ver los detalles'
                             self.Telegram.send_message(updates[0].message.chat.id, msg, reply_markup=reply_markup).wait()
 
                         dataLoadDelta = (datetime.now()-datetime.strptime(res['UpdateTime'],'%a %b %d %H:%M:%S %Y'))

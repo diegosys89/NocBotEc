@@ -36,7 +36,9 @@ class NocData:
         #Cambio de Tipo de datos a las fechas
         nocData['Last Resolved Date'] = pd.to_datetime(nocData['Last Resolved Date'], dayfirst = True)
         nocData['Submit Date'] = pd.to_datetime(nocData['Submit Date'], dayfirst = True)
-
+        nocData['Start'] = pd.to_datetime(nocData['Start'], dayfirst = True)
+        nocData['Finish'] = pd.to_datetime(nocData['Finish'], dayfirst = True)
+        nocData['Pending'] = pd.to_datetime(nocData['Pending'], dayfirst = True)
         #Se preparan los datos para ser unidos
         print("Filtrando y eliminado registros")
         closedInfo = ticketInfo.loc[(ticketInfo['Event'] == 'Closed')]#Datos de Cierre
@@ -146,7 +148,7 @@ class NocData:
         fechaCorte = datetime.now()
         fin = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/'+str(fechaCorte.day)+' 23:59:59'
         inicio = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/01'+' 00:00:00'
-        noc_query = noc_query.loc[((data['Last Resolved Date']<=pd.to_datetime(fin)) & (noc_query['Last Resolved Date']>=pd.to_datetime(inicio)))]
+        noc_query = noc_query.loc[((noc_query['Last Resolved Date']<=pd.to_datetime(fin)) & (noc_query['Last Resolved Date']>=pd.to_datetime(inicio)))]
         #---------------------
         data_list = []
         plt.clf()
@@ -177,6 +179,15 @@ class NocData:
         data = {'Datos':data_list,'ImagePath':ImagePath}
         return data
 
+    def saveFile(self, df, assignee):
+        if (assignee == 'EXT Acceso Infra Calidad NOC'):
+            df = df.loc[(df['Assignee'] == assignee) | ((df['Assigned Group'] == 'O&M Infraestructura') & (df['Assignee']=='TEC - O&M NOC')) | (df['Assigned Group'] == 'NOC Primer Nivel')]
+        else:
+            df = df.loc[df['Assignee'] == assignee]
+        documentPath = 'D:\\Projects\\NocBotEc\\Charts\\'+assignee+'_doc.csv'
+        df.to_csv(documentPath, sep=';', encoding='utf-8', index = False)
+        return documentPath
+
     def getFSEDetail(self, group, *argv):
         self.validateUpdatedData()
         ImagePath = 'D:\\Projects\\NocBotEc\\Charts\\FSE.png'
@@ -189,12 +200,15 @@ class NocData:
         inicio = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/01'+' 00:00:00'
         noc_query = noc_query.loc[((noc_query['Last Resolved Date']<=pd.to_datetime(fin)) & (noc_query['Last Resolved Date']>=pd.to_datetime(inicio)))]
         #---------------------
+
+        documentPath = self.saveFile(noc_query,group)
+
         data_list = []
         plt.clf()
         #Se prepara para que busque en todos los grupos
         noc_groups = [group]
         #Son los strings para las tablas
-        columns = ('Universo', 'Cumple', 'Justificado', 'No Cumple')
+        columns = ('Universo', 'Cumple', 'Justificado', 'No Cumple','Porcentaje')
         urgency = ['1-Critical', '2-High', '3-Medium', '4-Low']
         umbrales = [95,95,90,85]
         #Se arma el array con los datos para la tabla
@@ -211,12 +225,14 @@ class NocData:
         ax.axis("off")
 
         #fig.set_size_inches(w=6, h=5)
-        plt.title('Cumplimiento FSE ('+str(self.getModificationDate())+')')
+        plt.title('Cumplimiento FSE '+group+'('+str(self.getModificationDate())+')')
         plt.savefig(os.path.join(ImagePath), dpi=300, format='png', bbox_inches='tight')
-        data = {'Datos':data_list,'ImagePath':ImagePath}
+        data = {'Datos':data_list,'ImagePath':ImagePath, 'DocumentPath':documentPath}
         return data
 
     def calculateFSEDetail(self, df, assignee, urgency, type):
+        if type == 'Porcentaje':
+            return self.calculateFSE(df,assignee,urgency)
         if type == 'Universo':
             type = ['Cumple','Justificado','No Cumple']
         else:

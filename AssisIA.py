@@ -10,10 +10,12 @@ class AssisIA:
         updateTime = self.NocData.getModificationDate()
         text = ("Hola " + data.sender.first_name)
         image = False
+        document = False
         options = False
         imagePath = False
-        if(str(input.message.text).find('tks')>0):
+        documentPath = False
 
+        if(str(input.message.text).find('tks')>0):
             num = self.NocData.getMonthTicketQuantity()
             goal = self.NocData.getMeta()
             text = (text + ", Tenemos " + str(num) + " tickets. Actualizado al: "+updateTime+
@@ -44,12 +46,13 @@ class AssisIA:
             text = (text + "\nActualizado al: "+updateTime)
             image = True
             imagePath = resp['ImagePath']
+            document = True
+            documentPath = resp['DocumentPath']
 
         else:
             text = (text + ", no tengo respuesta para tu petición")
-            imagePath = False
 
-        msg = {'Image':image,'ImagePath':imagePath,'Text':text, 'Options': options,'UpdateTime':updateTime}
+        msg = {'Image':image,'ImagePath':imagePath,'Text':text, 'Options': options,'UpdateTime':updateTime, 'Document':document, 'DocumentPath':documentPath}
         return msg
 
 #Primer nombre: data.sender.first_name
