@@ -43,11 +43,12 @@ class AssisIA:
             else:
                 print(str(input.message.text))
                 resp = self.NocData.getFSEDetail(str(input.message.text))
+                document = True
+                documentPath = resp['DocumentPath']
             text = (text + "\nActualizado al: "+updateTime)
             image = True
             imagePath = resp['ImagePath']
-            document = True
-            documentPath = resp['DocumentPath']
+
 
         else:
             text = (text + ", no tengo respuesta para tu petición")
