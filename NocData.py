@@ -83,7 +83,7 @@ class NocData:
         #Creación de gráfica---------------------------------------
         finalchart['TTs Cerrados'] = finalchart['TTs Cerrados'].astype(int)
         finalchart['Nombre - Pos'] = finalchart.index.astype(str) + '.- ' + finalchart['Nombre']
-        ImagePath = 'D:\\Projects\\NocBotEc\\Charts\\Top10.png'
+        ImagePath = os.path.abspath(os.path.dirname(__file__)) + r'\Charts\Top10.png'
         finalchart = finalchart.sort_values(by = 'TTs Cerrados')
         objects = finalchart['Nombre - Pos']
         y_pos = np.arange(len(objects))
@@ -141,7 +141,7 @@ class NocData:
 
     def getFSE(self, *argv):
         self.validateUpdatedData()
-        ImagePath = 'D:\\Projects\\NocBotEc\\Charts\\FSE.png'
+        ImagePath = os.path.abspath(os.path.dirname(__file__)) + r'\Charts\FSE.png'
         noc_query = self.nocData.loc[(self.nocData['Status'] == 'Closed') | (self.nocData['Status'] == 'Resolved')]
         noc_query = noc_query.loc[noc_query['FSE']!='No Aplica']
         #los de este mes
@@ -184,13 +184,13 @@ class NocData:
             df = df.loc[(df['Assignee'] == assignee) | ((df['Assigned Group'] == 'O&M Infraestructura') & (df['Assignee']=='TEC - O&M NOC')) | (df['Assigned Group'] == 'NOC Primer Nivel')]
         else:
             df = df.loc[df['Assignee'] == assignee]
-        documentPath = 'D:\\Projects\\NocBotEc\\Charts\\'+assignee+'_doc.csv'
+        documentPath = os.path.abspath(os.path.dirname(__file__)) + r'\Charts\doc.csv'
         df.to_csv(documentPath, sep=';', encoding='utf-8', index = False)
         return documentPath
 
     def getFSEDetail(self, group, *argv):
         self.validateUpdatedData()
-        ImagePath = 'D:\\Projects\\NocBotEc\\Charts\\FSE.png'
+        ImagePath = os.path.abspath(os.path.dirname(__file__)) + r'\Charts\FSE.png'
         noc_query = self.nocData.loc[(self.nocData['Status'] == 'Closed') | (self.nocData['Status'] == 'Resolved')]
         noc_query = noc_query.loc[noc_query['FSE']!='No Aplica']
 
@@ -270,7 +270,7 @@ class NocData:
 
     def getTRE(self,*argv):
         self.validateUpdatedData()
-        ImagePath = 'D:\\Projects\\NocBotEc\\Charts\\TRE.png'
+        ImagePath = os.path.abspath(os.path.dirname(__file__)) + r'\Charts\TRE.png'
         fechaCorte = datetime.now()
         fin = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/'+str(fechaCorte.day)+' 23:59:59'
         inicio = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/01'+' 00:00:00'
