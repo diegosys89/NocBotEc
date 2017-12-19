@@ -179,11 +179,13 @@ class NocData:
         data = {'Datos':data_list,'ImagePath':ImagePath}
         return data
 
-    def saveFile(self, df, assignee):
-        if (assignee == 'EXT Acceso Infra Calidad NOC'):
-            df = df.loc[(df['Assignee'] == assignee) | ((df['Assigned Group'] == 'O&M Infraestructura') & (df['Assignee']=='TEC - O&M NOC')) | (df['Assigned Group'] == 'NOC Primer Nivel')]
-        else:
-            df = df.loc[df['Assignee'] == assignee]
+    def saveFile(self, df, assignee = None):
+        if assignee:
+            if (assignee == 'EXT Acceso Infra Calidad NOC'):
+                df = df.loc[(df['Assignee'] == assignee) | ((df['Assigned Group'] == 'O&M Infraestructura') & (df['Assignee']=='TEC - O&M NOC')) | (df['Assigned Group'] == 'NOC Primer Nivel')]
+            else:
+                df = df.loc[df['Assignee'] == assignee]
+
         documentPath = os.path.abspath(os.path.dirname(__file__)) + r'\Charts\doc.csv'
         df.to_csv(documentPath, sep=';', encoding='utf-8', index = False)
         return documentPath
@@ -201,7 +203,7 @@ class NocData:
         noc_query = noc_query.loc[((noc_query['Last Resolved Date']<=pd.to_datetime(fin)) & (noc_query['Last Resolved Date']>=pd.to_datetime(inicio)))]
         #---------------------
 
-        documentPath = self.saveFile(noc_query,group)
+        documentPath = self.saveFile(noc_query, assignee = group)
 
         data_list = []
         plt.clf()
@@ -281,6 +283,9 @@ class NocData:
         rows = ['Value']
         columns = ['TREa (95%)','TREsa Critical (95%)', 'TREsa High (90%)', 'TREsa Medium (85%)', 'TREsa Low (75%)']
 
+        noc_query = trea.append(tresa)
+        documentPath = self.saveFile(noc_query)
+
         #Se arma el array con los datos para la tabla
         data_list = []
         data_list.append([])
@@ -300,7 +305,7 @@ class NocData:
         ax.axis("off")
         plt.title('Tiempo de Registro ('+str(self.getModificationDate())+')')
         plt.savefig(os.path.join(ImagePath), dpi=300, format='png', bbox_inches='tight') # use format
-        data = {'Datos':data_list,'ImagePath':ImagePath}
+        data = {'Datos':data_list,'ImagePath':ImagePath, 'DocumentPath':documentPath}
         return data
 
     def getColorMap(self, data_list, umbral):

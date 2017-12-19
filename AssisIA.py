@@ -35,6 +35,8 @@ class AssisIA:
             text = (text + "\nActualizado al: "+updateTime)
             image = True
             imagePath = resp['ImagePath']
+            document = True
+            documentPath = resp['DocumentPath']
 
         elif(str(input.message.text) in ['EXT Acceso Infra Calidad NOC','EXT Transporte IP NOC','EXT Plataformas NOC','EXT Core Voz Datos NOC','NOC Unificado']):
             if(str(input.message.text) == 'NOC Unificado'):
