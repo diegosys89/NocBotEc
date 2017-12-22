@@ -5,6 +5,7 @@ import threading
 from datetime import datetime
 from AssisIA import AssisIA
 import time
+import logging
 
 fileInit = '.\\config.init'
 
@@ -29,24 +30,23 @@ class AssisBot:
         self.Listen = True
         if (not self.ListenerUsers.is_alive()):
             self.ListenerUsers.start()
-        print('Corriendo programa: '+str(self.ListenerUsers.is_alive()))
+        logging.info('Corriendo programa: '+str(self.ListenerUsers.is_alive()))
 
     def stopToListen(self):
         if self.ListenerUsers.is_alive():
             self.Listen = False
-            print('Deja de escuchar')
+            logging.info('Deja de escuchar')
         else:
-            print("No hay programa que detener")
+            logging.info("No hay programa que detener")
 
     def listeningUser(self):
-        print("Inicio subproceso de escucha")
+        logging.info("Inicio subproceso de escucha")
         updates = self.Telegram.get_updates().wait()
-        #last_updateId = (updates[-1].message.sender.id) if (len(updates)>0) else 0
         last_updateId = (updates[-1].update_id) if (len(updates)>0) else 0
         while True:
             try:
                 updates = self.Telegram.get_updates(offset = last_updateId+1, timeout = 100).wait()
-                print("Updates: "+str(len(updates))+", hora: "+str(datetime.now()))
+                logging.info("Updates: "+str(len(updates)))
                 if len(updates)>0:
                     if self.Listen: #debería responder? (Es una bandera)
                         res = self.IA.getResponse(updates[0])
@@ -78,13 +78,13 @@ class AssisBot:
                             msg = "Última actualización mayor a 02:30 horas. BD desactualizada, contactar a Administrador"
                             self.Telegram.send_message(updates[0].message.chat.id, msg).wait()
 
-                    print(updates[0].message.text)
+                    logging.info('Nuevo mensaje: '+updates[0].message.text)
                     last_updateId = updates[0].update_id
             except Exception as ex:
                 template = "Un error del tipo {0} ha ocurrido, por favor contactar Administrador. Detalles:\n{1!r}"
                 excepMsg = template.format(type(ex).__name__,ex.args)
-                print("Error capturado a: "+str(datetime.now()))
-                print(excepMsg)
+                logging.error("Error generado en el Bot")
+                logging.error(excepMsg)
                 if (type(ex).__name__ == "FileNotFoundError"): #Error no se ha encontrado el archivo, contestar con el error
                     self.Telegram.send_message(updates[0].message.chat.id, excepMsg).wait()
                     self.Telegram.send_message(self.adminChatId, excepMsg).wait()

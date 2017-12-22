@@ -1,4 +1,5 @@
 from NocData import NocData
+import logging
 
 class AssisIA:
     def __init__(self):
@@ -40,10 +41,10 @@ class AssisIA:
 
         elif(str(input.message.text) in ['EXT Acceso Infra Calidad NOC','EXT Transporte IP NOC','EXT Plataformas NOC','EXT Core Voz Datos NOC','NOC Unificado']):
             if(str(input.message.text) == 'NOC Unificado'):
-                print(str(input.message.text))
+                logging.info(str(input.message.text))
                 resp = self.NocData.getFSE()
             else:
-                print(str(input.message.text))
+                logging.info(str(input.message.text))
                 resp = self.NocData.getFSEDetail(str(input.message.text))
                 document = True
                 documentPath = resp['DocumentPath']

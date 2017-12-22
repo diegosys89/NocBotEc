@@ -2,7 +2,10 @@ from configobj import ConfigObj
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import math, os, time
+import math
+import os
+import time
+import logging
 from datetime import datetime, timedelta
 from calendar import monthrange
 from tabulate import tabulate
@@ -21,18 +24,18 @@ class NocData:
         self.loadData()
 
     def loadData(self):
-        print("Inicia Carga de Datos")
-        print("Cargando Noc Data")
+        logging.info("Inicia Carga de Datos")
+        logging.info("Cargando Noc Data")
         nocData = pd.read_csv(self.pathNoc)
-        print("Cargando TicketInfo")
+        logging.info("Cargando TicketInfo")
         ticketInfo = pd.read_csv(self.pathTtInfo)
-        print("Cargando Listas")
+        logging.info("Cargando Listas")
         lista = pd.read_csv(self.pathLista)
-        print("Estadarizando BDs")
+        logging.info("Estadarizando BDs")
         nocData.rename(columns = {'﻿Incident Number' : 'Incident Number'}, inplace = True)
         ticketInfo.rename(columns = {'﻿Incident Number' : 'Incident Number'}, inplace = True)
         lista.rename(columns = {'﻿Operador Cierre' : 'Operador Cierre'}, inplace = True)
-        print("Resolviendo conflicto de tipos de datos")
+        logging.info("Resolviendo conflicto de tipos de datos")
         #Cambio de Tipo de datos a las fechas
         nocData['Last Resolved Date'] = pd.to_datetime(nocData['Last Resolved Date'], dayfirst = True)
         nocData['Submit Date'] = pd.to_datetime(nocData['Submit Date'], dayfirst = True)
@@ -40,7 +43,7 @@ class NocData:
         nocData['Finish'] = pd.to_datetime(nocData['Finish'], dayfirst = True)
         nocData['Pending'] = pd.to_datetime(nocData['Pending'], dayfirst = True)
         #Se preparan los datos para ser unidos
-        print("Filtrando y eliminado registros")
+        logging.info("Filtrando y eliminado registros")
         closedInfo = ticketInfo.loc[(ticketInfo['Event'] == 'Closed')]#Datos de Cierre
         closedInfo = closedInfo.drop(closedInfo[[1,2,3,4,5,6,7,8,9]], axis = 1) #Se dejan solo columnas necesarias
         openInfo = ticketInfo.loc[ticketInfo['Event'] == 'Open'] #Se guarda para la apertura
@@ -48,13 +51,13 @@ class NocData:
 
         #No sería necesario realizar todo un query de las que corresponden a las fechas ya que eso lo haría el Qlik Sense
         #Aqui se juntan todas las tablas se Guardan en nocDataFinal
-        print("Unificando BDs")
+        logging.info("Unificando BDs")
         nocDataFinal = pd.merge(nocData, openInfo, on = 'Incident Number')
         nocDataFinal = pd.merge(nocDataFinal, closedInfo, on = 'Incident Number')
 
         self.nocData = nocDataFinal
         self.lista = lista
-        print("Finalizada Carga de Datos")
+        logging.info("Finalizada Carga de Datos")
 
     def getModificationDate(self):
         t = os.path.getmtime(self.pathNoc)
