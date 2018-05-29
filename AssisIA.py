@@ -28,11 +28,24 @@ class AssisIA:
             image = True
             imagePath = resp['ImagePath']
 
+        if(str(input.message.text).find('speed')>0):
+            num = self.NocData.getClosingSpeed()
+            goal = self.NocData.getMeta()
+            text = (text + ", La velocidad de cierre al momento es " + str(round(num['Velocidad'],2)) + ", abiertos al dia con el Noc "+str(num['Abiertos'])+", cerrados por el Noc "+str(num['Cerrados'])+". Actualizado al: "+updateTime)
+
         elif(str(input.message.text).find('fse')>0):
             options = [['EXT Acceso Infra Calidad NOC','EXT Transporte IP NOC','EXT Plataformas NOC','EXT Core Voz Datos NOC'],['NOC Unificado']]
 
         elif(str(input.message.text).find('tre')>0):
             resp = self.NocData.getTRE()
+            text = (text + "\nActualizado al: "+updateTime)
+            image = True
+            imagePath = resp['ImagePath']
+            document = True
+            documentPath = resp['DocumentPath']
+
+        elif(str(input.message.text).find('tsoe')>0):
+            resp = self.NocData.getTSoE()
             text = (text + "\nActualizado al: "+updateTime)
             image = True
             imagePath = resp['ImagePath']
@@ -51,7 +64,6 @@ class AssisIA:
             text = (text + "\nActualizado al: "+updateTime)
             image = True
             imagePath = resp['ImagePath']
-
 
         else:
             text = (text + ", no tengo respuesta para tu petición")

@@ -140,7 +140,21 @@ class NocData:
         tt_qty = noc_query['Closed Flag'].count()
         return tt_qty
 
-
+#Toca Validar si vale correctamente
+    def getClosingSpeed(self, *argv):
+        #Conteo de Tickets cerrados al momento del mes, hay que refactorizar la funci'on
+        self.validateUpdatedData()
+        fechaCorte = (argv[0]) if len(argv)>0 else datetime.now()
+        fin = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/'+str(fechaCorte.day)+' 23:59:59'
+        inicio = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/'+str(fechaCorte.day)+' 00:00:01'
+        data = self.nocData
+        abiertos = data.loc[((data['Submit Date']<=pd.to_datetime(fin)) & (data['Submit Date']>=pd.to_datetime(inicio)))]
+        cerrados = data.loc[((data['Last Resolved Date']<=pd.to_datetime(fin)) & (data['Last Resolved Date']>=pd.to_datetime(inicio)))]
+        open_tt_qty = abiertos['Open Flag NOC'].count()
+        closed_tt_qty = cerrados['Closed Flag'].count()
+        closingSpeed = closed_tt_qty/open_tt_qty
+        resp = {'Velocidad':closingSpeed,'Abiertos':open_tt_qty,'Cerrados':closed_tt_qty}
+        return resp
 
     def getFSE(self, *argv):
         self.validateUpdatedData()
@@ -307,6 +321,43 @@ class NocData:
                     colLabels=columns, loc="upper center", cellColours = self.getColorMap(data_list,umbrales))
         ax.axis("off")
         plt.title('Tiempo de Registro ('+str(self.getModificationDate())+')')
+        plt.savefig(os.path.join(ImagePath), dpi=300, format='png', bbox_inches='tight') # use format
+        data = {'Datos':data_list,'ImagePath':ImagePath, 'DocumentPath':documentPath}
+        return data
+
+    def getTSoE(self,*argv):
+        self.validateUpdatedData()
+        ImagePath = os.path.abspath(os.path.dirname(__file__)) + r'\Charts\TSoE.png'
+        fechaCorte = datetime.now()
+        fin = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/'+str(fechaCorte.day)+' 23:59:59'
+        inicio = str(fechaCorte.year)+'/'+str(fechaCorte.month)+'/01'+' 00:00:00'
+        data = self.nocData
+        noc_query = data.loc[((data['Last Resolved Date']<=pd.to_datetime(fin)) & (data['Last Resolved Date']>=pd.to_datetime(inicio)) & (data['Closed Flag']==1) & (data['TSoE']!='No Aplica'))]
+        tsoea = noc_query.loc[(noc_query['Service Type'] == 'Infrastructure Restoration') & (noc_query['Categorization Tier 1'] != 'TEC-SIN AFECTACION DE SERVICIO')]
+        tsoesa = noc_query.loc[(noc_query['Service Type'] != 'Infrastructure Restoration') | (noc_query['Categorization Tier 1'] == 'TEC-SIN AFECTACION DE SERVICIO')]
+        rows = ['Value']
+        columns = ['TSoEa (90%)','TSoEsa (80%)']
+
+        noc_query = tsoea.append(tsoesa)
+        documentPath = self.saveFile(noc_query)
+
+        per_tsoea = tsoea['TSoE'].loc[(tsoea['TSoE']=='Cumple')|(tsoea['TSoE']=='Justificado')].count()/tsoea['TSoE'].count()
+        per_tsoesa = tsoesa['TSoE'].loc[(tsoesa['TSoE']=='Cumple')|(tsoesa['TSoE']=='Justificado')].count()/tsoesa['TSoE'].count()
+        #Se arma el array con los datos para la tabla
+        data_list = []
+        data_list.append([])
+        data_list[0].append("{1:.{0}f}%".format(2,per_tsoea*100))
+        data_list[0].append("{1:.{0}f}%".format(2,per_tsoesa*100))
+
+        #Table - Main table
+        umbrales = [90,80]
+        plt.clf()
+        ax = plt.subplot2grid((6,6), (0,6), colspan=2, rowspan=2)
+        ax.table(cellText=data_list,
+                    rowLabels=rows,
+                    colLabels=columns, loc="upper center", cellColours = self.getColorMap(data_list,umbrales))
+        ax.axis("off")
+        plt.title('Tiempo de Solución de Eventos ('+str(self.getModificationDate())+')')
         plt.savefig(os.path.join(ImagePath), dpi=300, format='png', bbox_inches='tight') # use format
         data = {'Datos':data_list,'ImagePath':ImagePath, 'DocumentPath':documentPath}
         return data
